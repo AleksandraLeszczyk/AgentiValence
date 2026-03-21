@@ -60,13 +60,15 @@ def ask_writer(query: str) -> str:
     raise NotImplementedError
 
 
-model_principal_investigator = ChatOpenAI(model=os.environ["MODEL_PRINCIPAL_INVESTIGATOR"])
+model_principal_investigator = ChatOpenAI(
+    model=os.environ["MODEL_PRINCIPAL_INVESTIGATOR"]
+)
 principal_investogator = create_agent(
     model_principal_investigator,
     tools=[
         ask_literature_sage,
         # ask_calculation_analyst, ask_calculation_runner, ask_writer
-        ],
+    ],
     system_prompt=SystemMessage(
         content=[
             {
@@ -88,12 +90,31 @@ def format_context(context: list[str | Document]):
     return result
 
 
-def chat(history: list[dict[str, list[dict[str, str]]]]) -> tuple[list[dict]]:
-    last_message = history[-1]["content"][0]["text"]
-    print(last_message)
-    prior = history[:-1]
-    # answer, context = answer_question(last_message, prior)
-    messages = principal_investogator.invoke({"messages": [HumanMessage(last_message)]})
-    answer = messages["messages"][-1]
-    history.append({"role": "assistant", "content": answer})
-    return history, [""]
+def chat(history: list[dict]) -> tuple[list[dict], str]:
+    # Extract the user's string message safely
+    last_message_content = history[-1]["content"]
+
+    # Handle Gradio's potential multimodal dictionary format
+    if isinstance(last_message_content, list):
+        last_text = last_message_content[0]["text"]
+    else:
+        last_text = last_message_content
+
+    # 1. Get the response from your LangChain agent
+    response = principal_investogator.invoke(
+        {"messages": [HumanMessage(content=last_text)]}
+    )
+
+    # 2. Extract the actual AIMessage object
+    ai_message = response["messages"][-1]
+
+    # 3. dExtract the raw string from the LangChain object!
+    answer_text = ai_message.content
+
+    # 4. Append the clean string to history
+    history.append({"role": "assistant", "content": answer_text})
+
+    # 5. Return the updated history, AND a clean markdown string for the context panel
+    context_display = f"### Agent Output\n{answer_text}"
+
+    return history, context_display
