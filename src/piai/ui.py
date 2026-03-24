@@ -1,7 +1,7 @@
 import gradio as gr
 from dotenv import load_dotenv
 
-from principal_investigator import chat
+from principal_investigator import chat_with_principal_investigator
 
 load_dotenv(override=True)
 
@@ -26,9 +26,9 @@ def main():
                 )
 
             with gr.Column(scale=1):
-                context_markdown = gr.Markdown(
-                    label="📚 Retrieved Documents",
-                    value="*Retrieved context will appear here*",
+                event_markdown = gr.Markdown(
+                    label="Research Project Progress",
+                    value="*Events will appear here*",
                     container=True,
                     height=600,
                 )
@@ -38,9 +38,9 @@ def main():
             inputs=[message, chatbot],
             outputs=[message, chatbot],
         ).then(
-            chat, 
+            chat_with_principal_investigator, 
             inputs=[chatbot], 
-            outputs=[chatbot, context_markdown]
+            outputs=[chatbot, event_markdown]
         )
 
     ui.launch(inbrowser=True)
