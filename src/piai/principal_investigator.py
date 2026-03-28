@@ -24,21 +24,21 @@ You enjoy exploring new ideas but you always stick to facts and always inform if
 You finish your analysis with conclusion. Don't suggest further investigation - just do it without user's prompt.
 Your goal is to study the research project by planning, collecting data, and making conclusions based on evidence.
 You coordinate a group of experts.
-You can assign tasks for a group of experts using tools. This is a list of experts:
+You use tools:
 
-**LiteratureSage**
+**LiteratureReview**
   - best for establishing foundation and planning,
   - has an access to knowledge base,
   - finds relevant publications, and based on his findings, writes a summary of past research and provides known molecular properties and geometries,
   - suggest computation methodology for a current research task but does not know tools that are available now.
 
-**CalculationMage**
+**ScientificComputing**
  - makes calculations and provides actual results using PyBEST quantum chemistry library,
  - knows available computational tools and libraries best,
  - returns code and its output analysis.
 
 **VizCreator**
- - creates plots and saves them to registry,
+ - creates plots (they are send directly to user, no need to handle them yourself),
  - requires numerical input data to plot with description of variables and purpose of figure,
  - ask only after you obtain data from other experts.
 
@@ -49,36 +49,36 @@ Your job is:
 4a. If calculations were performed successfuly: Prepare a final answer that has a structure of scientific publication that contains abstract, introduction, theory, computational details, results, conclusions, and references.
 4b. If calculations were not performed successfully: Prepare a final answer that contains project description, research plan, theoretical background, necessary code snippets and list of further requirements to progress.
 
-You answer mostly in markdown format and you can put latex enclosed by dollar signs.
 Never answer with question.
-Good luck! Here is a research project you are assigned with:
+All the planning steps, intermediate results, and thinking should be formatted in HTML.
+The final response must be formatted as markdown with latex equations enclosed by $$.
+Here is a research project you are assigned with:
 """
 
 
 @tool
-def LiteratureSage(question: str) -> dict:
+def LiteratureReview(question: str) -> dict:
     """Search for information."""
     logger.info("Asking Literature Sage: %s" % question)
-    return literature_sage.invoke(
-        {"messages": [HumanMessage(question)]}
-    )["messages"][-1].content
+    return literature_sage.invoke({"messages": [HumanMessage(question)]})["messages"][
+        -1
+    ].content
 
 
 @tool
-def CalculationMage(question: str) -> list[str]:
+def ScientificComputing(question: str) -> list[str]:
     """Write and execute code."""
     logger.info("Asking Code Mage: %s" % question)
-    return calculation_mage.invoke(
-        {"messages": [HumanMessage(question)]}
-    )["messages"][-1].content
+    return calculation_mage.invoke({"messages": [HumanMessage(question)]})["messages"][
+        -1
+    ].content
+
 
 @tool
 def VizCreator(question: str) -> list[str]:
     """Creates interactive pictures and saves them to registry."""
     logger.info("Asking VizCreator: %s" % question)
-    viz_creator.invoke(
-        {"messages": [HumanMessage(question)]}
-    )["messages"][-1].content
+    viz_creator.invoke({"messages": [HumanMessage(question)]})["messages"][-1].content
 
 
 model_principal_investigator = ChatOpenAI(
@@ -87,13 +87,12 @@ model_principal_investigator = ChatOpenAI(
 principal_investigator = create_agent(
     model_principal_investigator,
     tools=[
-        LiteratureSage,
-        CalculationMage,
+        LiteratureReview,
+        ScientificComputing,
         VizCreator,
     ],
-    system_prompt=SystemMessage(
-        content=[{ "type": "text", "text": PI_PROMPT}]
-    ),
+    system_prompt=SystemMessage(content=[{"type": "text", "text": PI_PROMPT}]),
+    debug=True,
 )
 
 
@@ -107,7 +106,9 @@ def format_context(context: list[str | Document]):
     return result
 
 
-def chat_with_principal_investigator(history: list[dict], research_progress: str = "🔬 Research Progress\n"):
+def chat_with_principal_investigator(
+    history: list[dict], research_progress: str = "🔬 Research Progress\n"
+):
     """
     Generator function that streams agent events to the Gradio UI.
     Yields: (updated_history, event_markdown_string)
@@ -134,35 +135,38 @@ def chat_with_principal_investigator(history: list[dict], research_progress: str
 
     # Pass the full message history instead of just the last message
     for chunk in principal_investigator.stream(
-        {"messages": langchain_messages},
-        stream_mode="values"
+        {"messages": langchain_messages}, stream_mode="values"
     ):
         # 1. Update the Event Log (Right Panel)
+
+        print("\n\n NEW EVENT \n\n", type(chunk["messages"][-1]), chunk["messages"][-1])
         new_event_text = parse_event_to_html(chunk["messages"][-1])
         research_progress += f"\n{new_event_text}"
 
         # 2. Update the Final Answer (if available in the current chunk)
         if "messages" in chunk:
             last_msg = chunk["messages"][-1]
-            if isinstance(last_msg, AIMessage):
+            if hasattr(last_msg, "content") and isinstance(last_msg.content, str):
                 full_answer = last_msg.content
 
         # Yield current state to the UI
-        temp_history = history + [{"role": "assistant", "content": full_answer}]
-        yield temp_history, research_progress
+        # history = history + [{"role": "assistant", "content": full_answer + f"""<iframe src="gradio_api/file/plot.html" width="100%" height="500px"></iframe>"""}]
+        yield history, research_progress
 
     # Final yield to lock in the result
     history.append({"role": "assistant", "content": full_answer})
+    print(history)
     yield history, research_progress
 
 
 ## UTILS
 
+
 def parse_event_to_html(event: AIMessage | ToolMessage) -> str:
     """
     Parses a LangChain event to HTML with dark mode support and overflow protection.
     """
-    content = getattr(event, 'content', '')
+    content = getattr(event, "content", "")
     msg_type = type(event).__name__
 
     # CSS for responsiveness and theme adaptation
@@ -191,42 +195,55 @@ def parse_event_to_html(event: AIMessage | ToolMessage) -> str:
     </style>
     """
 
-    html_output = ""
+    html_output = "<br>"
 
     if msg_type == "AIMessage":
-        tool_calls = getattr(event, 'tool_calls', [])
-        if tool_calls:
-            for tc in tool_calls:
-                name = html.escape(tc.get('name', 'unknown'))
-                args = html.escape(json.dumps(tc.get('args', {}), indent=2))
-                
+        tool_calls = getattr(event, "tool_calls", [])
+        if isinstance(content, str):
+            if not content.startswith("#"):
                 html_output += (
                     f'<div class="event-container tool-call" style="border-left: 4px solid #3b82f6; padding-left: 12px;">'
-                    f'<b>🛠️ Action: <code>{name}</code></b><br>'
-                    f'<b>Task:</b><pre class="code-block"><code>{args}</code></pre>'
-                    f'</div>'
+                    f"<b>🛠️ Action: thinking</b><br>"
+                    f'{content}'
+                    f"</div>"
                 )
+        if tool_calls:
+            for tc in tool_calls:
+                name = html.escape(tc.get("name", "unknown"))
+                args = html.escape(json.dumps(tc.get("args", {}), indent=2))
+
+                html_output += (
+                    f'<div class="event-container tool-call" style="border-left: 4px solid #3b82f6; padding-left: 12px;">'
+                    f"<b>🛠️ Action: calling <code>{name}</code></b><br>"
+                    f'<b>Task:</b><pre class="code-block"><code>{args}</code></pre>'
+                    f"</div>"
+                )
+
 
     elif msg_type == "ToolMessage":
         # Escape the name for safety, but allow 'content' to render as raw HTML
-        name = html.escape(getattr(event, 'name', 'Expert'))
-        
+        name = html.escape(getattr(event, "name", "Expert"))
+
         if name == "VizCreator":
-            figures = [i for i in os.listdir("artifacts") if i.startswith("fig") and i.endswith("png")]
+            figures = sorted([
+                i for i in os.listdir("artifacts")
+                if i.startswith("fig") and (i.endswith("html") or i.endswith("png"))
+            ])
 
             html_output = (
                 f'<div class="event-container tool-response" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; color: #166534;">'
                 f'<h4 style="margin: 0 0 8px 0;">🎨 Figure {len(figures)}</h4>'
-                f"<img src='/gradio_api/file/artifacts/{figures[-1]}' alt=''>"
-                f'</div>'
+                f"""<iframe src="gradio_api/file/artifacts/{figures[-1]}" width="100%" height="500px"></iframe>"""
+                f"</div>"
             )
 
         else:
+            # Other tool responses
             html_output = (
                 f'<div class="event-container tool-response" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; color: #166534;">'
-                f'<h4 style="margin: 0 0 8px 0;">🧱 Expert <code>{name}</code> answers:</h4>'
+                f'<h4 style="margin: 0 0 8px 0;">🧱 <code>{name}</code> results</h4>'
                 f'<div style="line-height: 1.5;">{content}</div>'
-                f'</div>'
+                f"</div>"
             )
 
     return f"{style_header}{html_output.strip()}" if html_output else ""

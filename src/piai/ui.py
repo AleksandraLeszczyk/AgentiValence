@@ -16,22 +16,24 @@ def main():
 
     theme = gr.themes.Soft(font=["Inter", "system-ui", "sans-serif"])
 
-    with gr.Blocks(title="Quantum Chemistry Lab", theme=theme) as ui:
-        gr.Markdown("# 🏢 Quantum Chemistry Lab")
+    with gr.Blocks(title="AgenticValence", theme=theme) as ui:
+        gr.Markdown("## 🏢 Quantum Chemistry Lab")
 
         with gr.Row():
             with gr.Column(scale=1):
-                chatbot = gr.Chatbot(label="💬 Lab") 
+                chatbot = gr.Chatbot(
+                    label="💬 Lab", height=600,
+                    latex_delimiters=[{ "left": "$$", "right": "$$", "display": False}]) 
                 message = gr.Textbox(
-                    label="Your Research Project",
+                    label="Research Project",
                     placeholder="Ask anything about quantum chemistry...",
                     show_label=False,
                 )
 
             with gr.Column(scale=1):
                 event_html = gr.HTML(
-                    label="Research Project Progress",
-                    value="Events will appear here",
+                    label="Computational Details",
+                    value="Updates and figures will appear here.",
                     container=True,
                     height=600,
                 )
@@ -46,7 +48,7 @@ def main():
             outputs=[chatbot, event_html]
         )
 
-    ui.launch(inbrowser=True, allowed_paths=[".", "artifacts"])
+    ui.launch(inbrowser=True, allowed_paths=["artifacts"])
 
 
 def clean_artifacts():
