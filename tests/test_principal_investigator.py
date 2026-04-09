@@ -1,6 +1,6 @@
 import logging
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
-from piai.principal_investigator import principal_investogator
+from agentic_valence.agents.principal_investigator import principal_investogator
 
 logger = logging.getLogger()
 

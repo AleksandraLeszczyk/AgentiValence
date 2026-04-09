@@ -27,7 +27,7 @@ from pybest.occ_model import AufbauOccModel
 from pybest.part import get_mulliken_operators
 from pybest.wrappers import RHF
 
-from piai.dev_assets.pybest_example import mock_h2_calculations
+from agentic_valence.agents.dev_assets.pybest_example_output import mock_pybest_h2
 
 logger = logging.getLogger()
 
@@ -75,7 +75,7 @@ def execute_code_via_mcp(code: str) -> str:
         # response = httpx.post(MCP_SERVER_URL, json=payload, timeout=10.0)
         # return response.json().get("result", "Execution failed")
 
-        return mock_h2_calculations()
+        return mock_pybest_h2()
         
         return f"Successfully sent request to MCP server. MCP server is not enabled. Return code as an output."
     except Exception as e:
@@ -153,7 +153,8 @@ calculation_mage = create_agent(
     model_calculation_mage,
     tools=[
         search_code,
-        quick_ccsd,
+        execute_code_via_mcp,
+        # quick_ccsd,
         ],
     system_prompt=SystemMessage(
         content=[

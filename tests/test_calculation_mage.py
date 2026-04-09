@@ -1,6 +1,6 @@
 import logging
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
-from piai.calculation_mage import calculation_mage
+from agentic_valence.agents.calculation_mage import calculation_mage
 
 logger = logging.getLogger()
 

@@ -10,9 +10,9 @@ from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
-from piai.literature_sage import literature_sage
-from piai.calculation_mage import calculation_mage
-from piai.viz_creator import viz_creator
+from agentic_valence.agents.literature_sage import literature_sage
+from agentic_valence.agents.calculation_mage import calculation_mage
+from agentic_valence.agents.viz_creator import viz_creator
 
 logger = logging.getLogger()
 load_dotenv(override=True)

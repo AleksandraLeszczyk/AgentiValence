@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Any, Literal, Union
+import shutil
 
 import numpy as np
 from langchain.tools import tool
@@ -36,6 +37,20 @@ your steps:
     )
   answer with bool returned by tool.
 """
+
+
+
+def clean_artifacts():
+    if not os.path.exists("artifacts"):
+        os.mkdir("artifacts")
+    else:
+        # Move old artifacts
+        items = [i for i in os.listdir("artifacts")]
+        old_artifact_dirs = [i for i in os.listdir(".") if i.startswith("artifacts_")]
+        if items:
+            a = max([0] + [int(i.split("_")[-1]) for i in old_artifact_dirs])
+            shutil.move("artifacts", f"artifacts_{a+1}")
+
 
 
 @tool
@@ -108,6 +123,7 @@ def create_interactive_plot(
             legend=dict(orientation="h", yanchor="bottom", y=1.02),
         )
         # Save to artifacts
+        clean_artifacts()
         figures = [i for i in os.listdir("artifacts") if i.startswith("fig") and i.endswith("png")]
         fig.write_html(f"artifacts/fig{len(figures)}.html")
         return True
@@ -115,15 +131,16 @@ def create_interactive_plot(
     except Exception:
         return False
 
-@tool
-def create_molecule_plot(
-    basis: Any,
-    matrix_ao_mo: np.ndarray,
-    index: int,
-    isovalue: float = 0.07,
-    title: str = "Molecule"
-):
-    raise NotImplementedError
+# @tool
+# def create_molecule_plot(
+#     basis: Any,
+#     matrix_ao_mo: np.ndarray,
+#     index: int,
+#     isovalue: float = 0.07,
+#     title: str = "Molecule"
+# ):
+#     raise NotImplementedError
+
 
 model_viz_creator = ChatOpenAI(temperature=0, model_name=MODEL)
 
