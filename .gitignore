@@ -209,6 +209,10 @@ __marimo__/
 # Own
 artifacts*
 code_db/*
+code_base/*
 knowledge_db/*
+knowledge_base/*
 pybest_example*
 uv.lock
+.DS_Store
+.vscode
