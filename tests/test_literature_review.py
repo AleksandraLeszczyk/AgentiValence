@@ -1,12 +1,12 @@
 import logging
 from langchain_core.messages import HumanMessage, AIMessage
-from agentic_valence.agents.literature_sage import literature_sage
+from agentic_valence.agents.literature_review import literature_reviewer
 
 logger = logging.getLogger()
 
 
-def test_literature_sage():
-    messages = literature_sage.invoke(
+def test_literature_review():
+    messages = literature_reviewer.invoke(
         {"messages": [HumanMessage("When pCCD orbitals are better tha RHF orbitals?")]}
     )
     logger.info("Literature Sage answered: %s" % messages)

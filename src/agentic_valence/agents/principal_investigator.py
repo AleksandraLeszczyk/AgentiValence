@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
-from agentic_valence.agents.literature_sage import literature_sage
+from agentic_valence.agents.literature_review import literature_reviewer
 from agentic_valence.agents.calculation_mage import calculation_mage
 from agentic_valence.agents.viz_creator import viz_creator
 
@@ -60,7 +60,7 @@ Here is a research project you are assigned with:
 def LiteratureReview(question: str) -> dict:
     """Search for information."""
     logger.info("Asking Literature Sage: %s" % question)
-    return literature_sage.invoke({"messages": [HumanMessage(question)]})["messages"][
+    return literature_reviewer.invoke({"messages": [HumanMessage(question)]})["messages"][
         -1
     ].content
 
@@ -220,7 +220,7 @@ def parse_event_to_html(event: AIMessage | ToolMessage) -> str:
                 )
 
 
-    elif msg_type == "ToolMessage":
+    if msg_type == "ToolMessage":
         # Escape the name for safety, but allow 'content' to render as raw HTML
         name = html.escape(getattr(event, "name", "Expert"))
 
