@@ -16,14 +16,14 @@ logger = logging.getLogger()
 load_dotenv(override=True)
 
 
-def fetch_documents(dir_path: str | Path | None) -> list[Document]:
+def fetch_documents(dir_path: str | Path | None = None) -> list[Document]:
     """Fetch documents from knowledge_base directory.
 
     Returns:
         list[Document]: _description_
     """
     if not dir_path:
-        dir_path = Path(__file__).parent.parent
+        dir_path = Path(__file__).parent.parent.parent.parent
 
     knowledge_base_path = str(Path(dir_path) / "knowledge_base")
     logger.info("Attempting to fetch data from directory %s" % dir_path)
