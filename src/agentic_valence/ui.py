@@ -5,7 +5,8 @@ import shutil
 import gradio as gr
 from dotenv import load_dotenv
 
-from agentic_valence.agents.principal_investigator import chat_with_principal_investigator
+from agentic_valence.main import chat_with_principal_investigator
+from agentic_valence.style.html_elements import get_css_style_header
 
 load_dotenv(override=True)
 
@@ -33,7 +34,8 @@ def main():
             with gr.Column(scale=1):
                 event_html = gr.HTML(
                     label="Computational Details",
-                    value="Updates and figures will appear here.",
+                    value="Research steps and figures will appear here.",
+                    css_template=get_css_style_header(),
                     container=True,
                     height=600,
                 )
@@ -61,6 +63,7 @@ def clean_artifacts():
         if items:
             a = max([0] + [int(i.split("_")[-1]) for i in old_artifact_dirs])
             shutil.move("artifacts", f"artifacts_{a+1}")
+
 
 if __name__ == "__main__":
     clean_artifacts()
